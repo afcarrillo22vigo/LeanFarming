@@ -1,0 +1,14 @@
+// 1. Array vacío → solo al montar el componente (una vez)
+useEffect(() => {
+  fetch('/api/zonas')...
+}, [])
+
+// 2. Con variables → cada vez que esa variable cambie
+useEffect(() => {
+  fetch(`/api/animales?zona=${zonaId}`)...
+}, [zonaId])   // se re-ejecuta cuando zonaId cambia
+
+// 3. Sin array → en cada render (casi nunca lo querrás)
+useEffect(() => {
+  console.log("render!")
+})
