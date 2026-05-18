@@ -1,4 +1,3 @@
-import { data } from "autoprefixer";
 import { useState, useEffect } from "react";
 
 export default function MaquinariaForm() {
@@ -9,7 +8,6 @@ export default function MaquinariaForm() {
     "bomba",
     "otro",
   ];
-  const ESTADOS = ["operativo", "mantenimiento", "averiado", "baja"];
 
   const [form, setForm] = useState({
     nombre: "",

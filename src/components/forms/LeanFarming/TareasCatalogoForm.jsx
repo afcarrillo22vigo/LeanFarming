@@ -6,6 +6,7 @@ export default function TareasCatalogoForm() {
   const [form, setForm] = useState({
     codigo: "",
     nombre: "",
+    descripcion: "",
     cualificacion_requerida: "",
     duracion_estimada_min: 0,
     activa: true,
@@ -27,8 +28,6 @@ export default function TareasCatalogoForm() {
     if (form.codigo && !/^[a-z_]+$/.test(form.codigo))
       nuevosErrores.codigo =
         "Solo letras minúsculas y guiones bajos (ej: lavado_robot)";
-    if (!form.cualificacion_requerida.trim())
-      nuevosErrores.cualificacion_requerida = "La cualificacion es obligatoria";
     if (!form.nombre.trim()) nuevosErrores.nombre = "El nombre es obligatorio";
     setErrores(nuevosErrores);
     return Object.keys(nuevosErrores).length === 0;
@@ -40,6 +39,7 @@ export default function TareasCatalogoForm() {
 
     const datos = {
       ...form,
+      cualificacion_requerida: form.cualificacion_requerida || null,
       duracion_estimada_min: form.duracion_estimada_min
         ? Number(form.duracion_estimada_min)
         : null,
@@ -96,6 +96,22 @@ export default function TareasCatalogoForm() {
             )}
           </div>
 
+          {/* Descripción */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Descripción{" "}
+              <span className="text-gray-400 font-normal">(opcional)</span>
+            </label>
+            <textarea
+              name="descripcion"
+              value={form.descripcion}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Describe la tarea..."
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            />
+          </div>
+
           {/*CUALIFICACION_REQUERIDA*/}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -117,11 +133,6 @@ export default function TareasCatalogoForm() {
             <p className="text-xs text-gray-400 mt-1">
               Solo empleados con esta cualificación podrán ejecutar la tarea.
             </p>
-            {errores.cualificacion_requerida && (
-              <p className="text-red-500 text-xs mt-1">
-                {errores.cualificacion_requerida}
-              </p>
-            )}
           </div>
 
           <div>

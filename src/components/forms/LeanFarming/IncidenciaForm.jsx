@@ -44,8 +44,8 @@ export default function IncidenciaForm() {
       { id: "zona-5", nombre: "General" },
     ]);
     setEmpleados([
-      { id: "emp-1", nombre: "María López" },
-      { id: "emp-2", nombre: "Carlos Méndez" },
+      { id: "emp-1", nombre: "María", apellidos: "López" },
+      { id: "emp-2", nombre: "Carlos", apellidos: "Méndez" },
     ]);
     setAnimales([
       { id: "ani-1", crotal_oficial: "ES001", nombre: "Lola" },
@@ -133,6 +133,7 @@ export default function IncidenciaForm() {
       asignado_a: form.asignado_a || null,
       foto_url: form.foto_url || null,
       subtipo: form.subtipo || null,
+      descripcion: form.descripcion || null,
     };
     console.log("Incidencia a crear:", datos);
   };
@@ -343,7 +344,7 @@ export default function IncidenciaForm() {
                 <option value="">— Ninguno —</option>
                 {empleados.map((e) => (
                   <option key={e.id} value={e.id}>
-                    {e.nombre}
+                    {e.nombre} {e.apellidos}
                   </option>
                 ))}
               </select>
@@ -362,7 +363,7 @@ export default function IncidenciaForm() {
                 <option value="">— Ninguno —</option>
                 {empleados.map((e) => (
                   <option key={e.id} value={e.id}>
-                    {e.nombre}
+                    {e.nombre} {e.apellidos}
                   </option>
                 ))}
               </select>
