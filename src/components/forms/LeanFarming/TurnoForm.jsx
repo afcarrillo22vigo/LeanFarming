@@ -7,7 +7,7 @@ const TIPOS_TURNO = ["manana", "tarde"];
 
 const turnoSchema = z
   .object({
-    fecha: z.string().min(1, "La fecha s obligatoria"),
+    fecha: z.string().min(1, "La fecha es obligatoria"),
     tipo_turno: z.string().min(1, "Selecciona un tipo de turno"),
     hora_inicio: z.string().min(1, "La hora de inicio es obligatoria"),
     hora_fin: z.string().min(1, "La hora de fin es obligatoria"),

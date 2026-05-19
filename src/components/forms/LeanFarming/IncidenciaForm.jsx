@@ -416,7 +416,7 @@ export default function IncidenciaForm() {
                     <option value="">— Selecciona —</option>
                     {empleados.map((e) => (
                       <option key={e.id} value={e.id}>
-                        {e.nombre}
+                        {e.nombre} {e.apellidos}
                       </option>
                     ))}
                   </select>
