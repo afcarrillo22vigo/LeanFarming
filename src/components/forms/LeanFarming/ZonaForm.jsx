@@ -1,62 +1,61 @@
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+// 1. Esquema de validación con Zod
+const zonaSchema = z.object({
+  nombre: z.string().min(1, "El nombre es obligatorio"),
+  codigo: z.string().min(1, "El código es obligatorio"),
+  descripcion: z.string().optional(),
+  tiene_pantalla_tv: z.boolean().default(false),
+  tiene_tablet: z.boolean().default(false),
+});
 
 export default function ZonaForm() {
-  const [form, setForm] = useState({
-    nombre: "",
-    codigo: "",
-    descripcion: "",
-    tiene_pantalla_tv: false, // booleano, no string
-    tiene_tablet: false,
+  // 2. Configuración de React Hook Form
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(zonaSchema),
+    defaultValues: {
+      nombre: "",
+      codigo: "",
+      descripcion: "",
+      tiene_pantalla_tv: false,
+      tiene_tablet: false,
+    },
   });
 
-  const [errores, setErrores] = useState({});
-
-  // Handler para inputs de texto — igual que siempre
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  // Handler para booleanos
-  // e.target.checked es true/false, no e.target.value
-  const handleBoolean = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.checked });
-  };
-
-  const validar = () => {
-    const nuevosErrores = {};
-    if (!form.nombre.trim()) nuevosErrores.nombre = "El nombre es obligatorio";
-    if (!form.codigo.trim()) nuevosErrores.codigo = "El codigo es obligatorio";
-    setErrores(nuevosErrores);
-    return Object.keys(nuevosErrores).length === 0;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!validar()) return;
-    console.log("Zona a crear:", form);
+  // 3. El submit ya solo se ejecuta si la validación pasa
+  const onSubmit = (datos) => {
+    console.log("Zona a crear:", datos);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-lg">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full">
         <h2 className="text-xl font-semibold text-gray-800 mb-6">Nueva zona</h2>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
           {/* Nombre */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Nombre
             </label>
+            {/* register("nombre_del_campo") reemplaza a name, value y onChange */}
             <input
               type="text"
-              name="nombre"
-              value={form.nombre}
-              onChange={handleChange}
               placeholder="Ej: Sala de robots, Becerrero..."
+              {...register("nombre")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {errores.nombre && (
-              <p className="text-red-500 text-xs mt-1">{errores.nombre}</p>
+            {/* Inyección de mensajes de Zod con RHF */}
+            {errors.nombre && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.nombre.message}
+              </p>
             )}
           </div>
 
@@ -67,14 +66,14 @@ export default function ZonaForm() {
             </label>
             <input
               type="text"
-              name="codigo"
-              value={form.codigo}
-              onChange={handleChange}
               placeholder="Ej: z-1, zon_3..."
+              {...register("codigo")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {errores.codigo && (
-              <p className="text-red-500 text-xs mt-1">{errores.codigo}</p>
+            {errors.codigo && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.codigo.message}
+              </p>
             )}
           </div>
 
@@ -85,16 +84,14 @@ export default function ZonaForm() {
               <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <textarea
-              name="descripcion"
-              value={form.descripcion}
-              onChange={handleChange}
               rows={3}
               placeholder="Describe la zona..."
+              {...register("descripcion")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />
           </div>
 
-          {/* Booleanos — cada uno es un checkbox independiente */}
+          {/* Booleanos */}
           <div className="flex flex-col gap-3">
             <label className="block text-sm font-medium text-gray-700">
               Equipamiento
@@ -103,9 +100,7 @@ export default function ZonaForm() {
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
-                name="tiene_pantalla_tv"
-                checked={form.tiene_pantalla_tv} // checked, no value
-                onChange={handleBoolean} // handler específico para booleanos
+                {...register("tiene_pantalla_tv")}
                 className="rounded border-gray-300 text-blue-500 w-4 h-4"
               />
               <span className="text-sm text-gray-700">Tiene pantalla TV</span>
@@ -114,9 +109,7 @@ export default function ZonaForm() {
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
-                name="tiene_tablet"
-                checked={form.tiene_tablet}
-                onChange={handleBoolean}
+                {...register("tiene_tablet")}
                 className="rounded border-gray-300 text-blue-500 w-4 h-4"
               />
               <span className="text-sm text-gray-700">Tiene tablet</span>

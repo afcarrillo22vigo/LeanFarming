@@ -1,22 +1,64 @@
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  tareasCatalogo as mockCatalogo,
+  tareasRecurrentes as mockRecurrentes,
+  empleados as mockEmpleados,
+  zonas as mockZonas,
+  maquinaria as mockMaquinaria,
+} from "../../../mock/mock";
+import * as z from "zod";
 
 const ESTADOS = ["pendiente", "en_curso", "completada", "vencida", "cancelada"];
 
+const tareaEjecucionSchema = z
+  .object({
+    catalogo_id: z.string().min(1, "Selecciona una tarea"),
+    recurrente_id: z.string(),
+    empleado_id: z.string(),
+    zona_id: z.string(),
+    maquinaria_id: z.string(),
+    estado: z.string().min(1, "El estado de la tarea es obligatorio"),
+    ts_planificada: z.string().min(1, "La fecha planificada es obligatoria"),
+    ts_inicio: z.string(),
+    ts_fin: z.string(),
+    notas: z.string(),
+  })
+  .refine(
+    (datos) => {
+      if (!datos.ts_inicio || !datos.ts_fin) return true;
+      return datos.ts_fin > datos.ts_inicio;
+    },
+    {
+      error: "La fecha de fin debe ser posterior a la fecha de inicio",
+      path: ["ts_fin"],
+    },
+  );
+
 export default function TareaEjecucionForm() {
-  const [form, setForm] = useState({
-    catalogo_id: "",
-    recurrente_id: "",
-    empleado_id: "",
-    zona_id: "",
-    maquinaria_id: "",
-    estado: "pendiente",
-    ts_planificada: "",
-    ts_inicio: "",
-    ts_fin: "",
-    notas: "",
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+    setValue,
+  } = useForm({
+    resolver: zodResolver(tareaEjecucionSchema),
+    defaultValues: {
+      catalogo_id: "",
+      recurrente_id: "",
+      empleado_id: "",
+      zona_id: "",
+      maquinaria_id: "",
+      estado: "pendiente",
+      ts_planificada: "",
+      ts_inicio: "",
+      ts_fin: "",
+      notas: "",
+    },
   });
 
-  const [errores, setErrores] = useState({});
   const [catalogos, setCatalogos] = useState([]);
   const [recurrentes, setRecurrentes] = useState([]); // filtradas por catálogo
   const [empleados, setEmpleados] = useState([]);
@@ -25,26 +67,17 @@ export default function TareaEjecucionForm() {
 
   // Cargamos catálogos, empleados y zonas al montar
   useEffect(() => {
-    setCatalogos([
-      { id: "cat-1", nombre: "Lavado de robot VMS" },
-      { id: "cat-2", nombre: "Limpieza de bebederos" },
-      { id: "cat-3", nombre: "Desinfección de camas" },
-    ]);
-    setEmpleados([
-      { id: "emp-1", nombre: "María", apellidos: "López" },
-      { id: "emp-2", nombre: "Carlos", apellidos: "Méndez" },
-    ]);
-    setZonas([
-      { id: "zona-1", nombre: "Nave" },
-      { id: "zona-2", nombre: "Becerrero" },
-      { id: "zona-3", nombre: "Enfermería" },
-    ]);
+    setCatalogos(mockCatalogo);
+    setEmpleados(mockEmpleados);
+    setZonas(mockZonas);
   }, []);
+
+  const catalogoSeleccionado = watch("catalogo_id");
 
   // Encadenado 1: catálogo + recurrentes
   // Cuando cambia el catálogo, cargamos solo las tareas recurrentes de ese catálogo
   useEffect(() => {
-    if (!form.catalogo_id) {
+    if (!catalogoSeleccionado) {
       setRecurrentes([]);
       return;
     }
@@ -52,31 +85,16 @@ export default function TareaEjecucionForm() {
     // fetch(`/api/tareas-recurrentes?catalogo_id=${form.catalogo_id}`)
     //   .then(r => r.json()).then(setRecurrentes)
 
-    const todasLasRecurrentes = [
-      {
-        id: "rec-1",
-        descripcion_frecuencia: "Lunes y jueves a las 22:00",
-        catalogo_id: "cat-1",
-      },
-      {
-        id: "rec-2",
-        descripcion_frecuencia: "Martes y viernes a las 22:00",
-        catalogo_id: "cat-1",
-      },
-      {
-        id: "rec-3",
-        descripcion_frecuencia: "Lunes, miércoles y viernes a las 10:00",
-        catalogo_id: "cat-2",
-      },
-    ];
     setRecurrentes(
-      todasLasRecurrentes.filter((r) => r.catalogo_id === form.catalogo_id),
+      mockRecurrentes.filter((r) => r.catalogo_id === catalogoSeleccionado),
     );
-  }, [form.catalogo_id]);
+  }, [catalogoSeleccionado]);
 
-  // Encadenado 2: zona → maquinaria
+  const zonaSeleccionada = watch("zona_id");
+
+  // Encadenado 2: zona con maquinaria
   useEffect(() => {
-    if (!form.zona_id) {
+    if (!zonaSeleccionada) {
       setMaquinaria([]);
       return;
     }
@@ -84,82 +102,31 @@ export default function TareaEjecucionForm() {
     // fetch(`/api/maquinaria?zona_id=${form.zona_id}`)
     //   .then(r => r.json()).then(setMaquinaria)
 
-    const todasLasMaquinas = [
-      { id: "maq-1", nombre: "VMS 1", zona_id: "zona-1" },
-      { id: "maq-2", nombre: "VMS 2", zona_id: "zona-1" },
-      { id: "maq-3", nombre: "VMS 3", zona_id: "zona-1" },
-      { id: "maq-4", nombre: "Carro TMR", zona_id: "zona-1" },
-    ];
-    setMaquinaria(todasLasMaquinas.filter((m) => m.zona_id === form.zona_id));
-  }, [form.zona_id]);
+    setMaquinaria(mockMaquinaria.filter((m) => m.zona_id === zonaSeleccionada));
+  }, [zonaSeleccionada]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    // Al cambiar catálogo reseteamos recurrente
-    if (name === "catalogo_id") {
-      setForm({ ...form, catalogo_id: value, recurrente_id: "" });
-      return;
-    }
-
-    // Al cambiar zona reseteamos maquinaria
-    if (name === "zona_id") {
-      setForm({ ...form, zona_id: value, maquinaria_id: "" });
-      return;
-    }
-
-    setForm({ ...form, [name]: value });
-  };
-
-  const validar = () => {
-    const nuevosErrores = {};
-    if (!form.catalogo_id)
-      nuevosErrores.catalogo_id = "La tarea es obligatoria";
-    if (!form.ts_planificada)
-      nuevosErrores.ts_planificada = "La fecha planificada es obligatoria";
-    // ts_fin debe ser posterior a ts_inicio si ambos están rellenos
-    if (form.ts_inicio && form.ts_fin && form.ts_fin <= form.ts_inicio)
-      nuevosErrores.ts_fin =
-        "La fecha de fin debe ser posterior a la de inicio";
-    setErrores(nuevosErrores);
-    return Object.keys(nuevosErrores).length === 0;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!validar()) return;
-
-    const datos = {
-      ...form,
-      recurrente_id: form.recurrente_id || null,
-      empleado_id: form.empleado_id || null,
-      zona_id: form.zona_id || null,
-      maquinaria_id: form.maquinaria_id || null,
-      ts_inicio: form.ts_inicio || null,
-      ts_fin: form.ts_fin || null,
-      notas: form.notas || null,
-    };
-
-    console.log("Ejecución a crear:", datos);
+  const onSubmit = (datos) => {
+    console.log("Ejecución a crear", datos);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-lg">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full">
         <h2 className="text-xl font-semibold text-gray-800 mb-6">
           Nueva ejecución de tarea
         </h2>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
           {/* Catálogo — obligatorio */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Tarea
             </label>
             <select
-              name="catalogo_id"
-              value={form.catalogo_id}
-              onChange={handleChange}
+              {...register("catalogo_id", {
+                // Reiniciamos recurrente_id al cambiar la tarea
+                onChange: () => setValue("recurrente_id", ""),
+              })}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">— Selecciona una tarea —</option>
@@ -169,8 +136,10 @@ export default function TareaEjecucionForm() {
                 </option>
               ))}
             </select>
-            {errores.catalogo_id && (
-              <p className="text-red-500 text-xs mt-1">{errores.catalogo_id}</p>
+            {errors.catalogo_id && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.catalogo_id.message}
+              </p>
             )}
           </div>
 
@@ -181,10 +150,8 @@ export default function TareaEjecucionForm() {
               <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <select
-              name="recurrente_id"
-              value={form.recurrente_id}
-              onChange={handleChange}
-              disabled={!form.catalogo_id}
+              {...register("recurrente_id")}
+              disabled={!catalogoSeleccionado}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
             >
               <option value="">— Sin frecuencia asociada —</option>
@@ -194,7 +161,7 @@ export default function TareaEjecucionForm() {
                 </option>
               ))}
             </select>
-            {!form.catalogo_id && (
+            {!catalogoSeleccionado && (
               <p className="text-xs text-gray-400 mt-1">
                 Selecciona primero una tarea.
               </p>
@@ -207,9 +174,7 @@ export default function TareaEjecucionForm() {
               Estado
             </label>
             <select
-              name="estado"
-              value={form.estado}
-              onChange={handleChange}
+              {...register("estado")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {ESTADOS.map((e) => (
@@ -227,9 +192,7 @@ export default function TareaEjecucionForm() {
               <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <select
-              name="empleado_id"
-              value={form.empleado_id}
-              onChange={handleChange}
+              {...register("empleado_id")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">— Sin asignar —</option>
@@ -241,15 +204,15 @@ export default function TareaEjecucionForm() {
             </select>
           </div>
 
-          {/* Zona → encadenado con maquinaria */}
+          {/* Zona encadenado con maquinaria */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Zona <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <select
-              name="zona_id"
-              value={form.zona_id}
-              onChange={handleChange}
+              {...register("zona_id", {
+                onChange: () => setValue("maquinaria_id", ""),
+              })}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">— Sin zona —</option>
@@ -268,10 +231,8 @@ export default function TareaEjecucionForm() {
               <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <select
-              name="maquinaria_id"
-              value={form.maquinaria_id}
-              onChange={handleChange}
-              disabled={!form.zona_id}
+              {...register("maquinaria_id")}
+              disabled={!zonaSeleccionada}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
             >
               <option value="">— Ninguna —</option>
@@ -281,7 +242,7 @@ export default function TareaEjecucionForm() {
                 </option>
               ))}
             </select>
-            {!form.zona_id && (
+            {!zonaSeleccionada && (
               <p className="text-xs text-gray-400 mt-1">
                 Selecciona primero una zona.
               </p>
@@ -295,14 +256,12 @@ export default function TareaEjecucionForm() {
             </label>
             <input
               type="datetime-local"
-              name="ts_planificada"
-              value={form.ts_planificada}
-              onChange={handleChange}
+              {...register("ts_planificada")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {errores.ts_planificada && (
+            {errors.ts_planificada && (
               <p className="text-red-500 text-xs mt-1">
-                {errores.ts_planificada}
+                {errors.ts_planificada.message}
               </p>
             )}
           </div>
@@ -315,9 +274,7 @@ export default function TareaEjecucionForm() {
               </label>
               <input
                 type="datetime-local"
-                name="ts_inicio"
-                value={form.ts_inicio}
-                onChange={handleChange}
+                {...register("ts_inicio")}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -328,13 +285,13 @@ export default function TareaEjecucionForm() {
               </label>
               <input
                 type="datetime-local"
-                name="ts_fin"
-                value={form.ts_fin}
-                onChange={handleChange}
+                {...register("ts_fin")}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              {errores.ts_fin && (
-                <p className="text-red-500 text-xs mt-1">{errores.ts_fin}</p>
+              {errors.ts_fin && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.ts_fin.message}
+                </p>
               )}
             </div>
           </div>
@@ -346,9 +303,7 @@ export default function TareaEjecucionForm() {
               <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <textarea
-              name="notas"
-              value={form.notas}
-              onChange={handleChange}
+              {...register("notas")}
               rows={3}
               placeholder="Observaciones sobre la ejecución..."
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"

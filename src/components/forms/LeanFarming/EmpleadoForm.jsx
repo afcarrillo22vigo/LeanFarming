@@ -1,110 +1,90 @@
 import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useForm } from "react-hook-form";
 
 const ROLES = ["encargado", "auxiliar", "veterinario", "mecanico"];
 const CUALIFICACIONES = ["VMS", "TMR", "veterinaria"];
-
 const hoy = new Date().toISOString().split("T")[0];
 
+const empleadoSchema = z.object({
+  nombre: z.string().min(1, "El nombre es obligatorio"),
+  apellidos: z.string().min(1, "Los apellidos son obligatorios"),
+  rol: z.string().min(1, "Debes seleccionar un rol"),
+  cualificaciones: z.array(z.string()).default([]), // Lista de textos
+  telefono: z.string().max(20, "El número de teléfono es demasiado grande"),
+  email: z.string().max(150, "El email es demasiado grande"),
+  fecha_alta: z.string().min(1, "La fecha de alta es obligatoria"),
+  fecha_baja: z.string().optional().or(z.literal("")), // Permite que venga vacío del input date
+  activo: z.boolean().default(true),
+});
+
 export default function EmpleadoForm() {
-  const [form, setForm] = useState({
-    nombre: "",
-    apellidos: "",
-    rol: "",
-    cualificaciones: [],
-    telefono: "",
-    email: "",
-    fecha_alta: hoy,
-    fecha_baja: "",
-    activo: true,
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(empleadoSchema),
+    defaultValues: {
+      nombre: "",
+      apellidos: "",
+      rol: "",
+      cualificaciones: [],
+      telefono: "",
+      email: "",
+      fecha_alta: hoy,
+      fecha_baja: "",
+      activo: true,
+    },
   });
 
-  const [errores, setErrores] = useState({});
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleCheckbox = (e) => {
-    const valor = e.target.value;
-    const yaEsta = form.cualificaciones.includes(valor);
-    setForm({
-      ...form,
-      cualificaciones: yaEsta
-        ? form.cualificaciones.filter((c) => c !== valor)
-        : [...form.cualificaciones, valor],
-    });
-  };
-
-  const handleBoolean = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.checked });
-  };
-
-  const validar = () => {
-    const nuevosErrores = {};
-    if (!form.nombre.trim()) nuevosErrores.nombre = "El nombre es obligatorio";
-    if (!form.apellidos.trim())
-      nuevosErrores.apellidos = "Los apellidos son obligatorios";
-    if (!form.rol) nuevosErrores.rol = "Debes seleccionar un rol";
-    if (form.telefono.length > 20)
-      nuevosErrores.telefono = "El numero de teléfono es demasiado grande";
-    if (form.email.length > 150)
-      nuevosErrores.email = "El email es demasiado grande";
-    if (!form.fecha_alta)
-      nuevosErrores.fecha_alta = "La fecha de alta es obligatoria";
-    setErrores(nuevosErrores);
-    return Object.keys(nuevosErrores).length === 0;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!validar()) return;
-    console.log("Datos a enviar:", form);
+  const onSubmit = (datos) => {
+    console.log("Datos a enviar:", datos);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-lg">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full">
         <h2 className="text-xl font-semibold text-gray-800 mb-6">
           Nuevo empleado
         </h2>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <div className="grid grid-cols-2 gap-4">
-            {/* Nombre */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nombre
-              </label>
-              <input
-                type="text"
-                name="nombre"
-                value={form.nombre}
-                onChange={handleChange}
-                placeholder="Ej: María, Luis..."
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              {errores.nombre && (
-                <p className="text-red-500 text-xs mt-1">{errores.nombre}</p>
-              )}
-            </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
+          {/* Nombre */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nombre
+            </label>
+            <input
+              type="text"
+              placeholder="Ej: María, Luis..."
+              {...register("nombre")}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {errors.nombre && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.nombre.message}
+              </p>
+            )}
+          </div>
 
-            {/* Apellidos */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Apellidos
-              </label>
-              <input
-                type="text"
-                name="apellidos"
-                value={form.apellidos}
-                onChange={handleChange}
-                placeholder="Ej: López, Fernández..."
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              {errores.apellidos && (
-                <p className="text-red-500 text-xs mt-1">{errores.apellidos}</p>
-              )}
-            </div>
+          {/* Apellidos */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Apellidos
+            </label>
+            <input
+              type="text"
+              placeholder="Ej: López, Fernández..."
+              {...register("apellidos")}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {errors.apellidos && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.apellidos.message}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -116,15 +96,14 @@ export default function EmpleadoForm() {
               </label>
               <input
                 type="text"
-                maxLength={20}
-                name="telefono"
-                value={form.telefono}
-                onChange={handleChange}
                 placeholder="Ej: 123453..."
+                {...register("telefono")}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              {errores.telefono && (
-                <p className="text-red-500 text-xs mt-1">{errores.telefono}</p>
+              {errors.telefono && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.telefono.message}
+                </p>
               )}
             </div>
 
@@ -136,15 +115,14 @@ export default function EmpleadoForm() {
               </label>
               <input
                 type="text"
-                name="email"
-                value={form.email}
-                maxLength={150}
-                onChange={handleChange}
                 placeholder="Ej: cuenta@gmail.com, 123@..."
+                {...register("email")}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              {errores.email && (
-                <p className="text-red-500 text-xs mt-1">{errores.email}</p>
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.email.message}
+                </p>
               )}
             </div>
           </div>
@@ -155,9 +133,7 @@ export default function EmpleadoForm() {
               Rol
             </label>
             <select
-              name="rol"
-              value={form.rol}
-              onChange={handleChange}
+              {...register("rol")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">— Selecciona un rol —</option>
@@ -167,8 +143,8 @@ export default function EmpleadoForm() {
                 </option>
               ))}
             </select>
-            {errores.rol && (
-              <p className="text-red-500 text-xs mt-1">{errores.rol}</p>
+            {errors.rol && (
+              <p className="text-red-500 text-xs mt-1">{errors.rol.message}</p>
             )}
           </div>
 
@@ -180,11 +156,14 @@ export default function EmpleadoForm() {
               </label>
               <input
                 type="date"
-                name="fecha_alta"
-                value={form.fecha_alta}
-                onChange={handleChange}
+                {...register("fecha_alta")}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              {errors.fecha_alta && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.fecha_alta.message}
+                </p>
+              )}
             </div>
 
             {/* Fecha de Baja */}
@@ -195,31 +174,30 @@ export default function EmpleadoForm() {
               </label>
               <input
                 type="date"
-                name="fecha_baja"
-                value={form.fecha_baja}
-                onChange={handleChange}
+                {...register("fecha_baja")}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
 
-          {/* Cualificaciones */}
+          {/* Cualificaciones (Array de checkboxes) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Cualificaciones{" "}
               <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-wrap gap-3">
               {CUALIFICACIONES.map((c) => (
                 <label
                   key={c}
                   className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer"
                 >
+                  {/* Al registrar todos con el mismo nombre ("cualificaciones") y pasar un value, 
+                      RHF los agrupa automáticamente en un array en base a si están chequeados o no */}
                   <input
                     type="checkbox"
                     value={c}
-                    checked={form.cualificaciones.includes(c)}
-                    onChange={handleCheckbox}
+                    {...register("cualificaciones")}
                     className="rounded border-gray-300 text-blue-500"
                   />
                   {c}
@@ -228,13 +206,11 @@ export default function EmpleadoForm() {
             </div>
           </div>
 
-          {/* Activo */}
+          {/* Activo (Booleano único) */}
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
-              name="activo"
-              checked={form.activo}
-              onChange={handleBoolean}
+              {...register("activo")}
               className="rounded border-gray-300 text-blue-500 w-4 h-4"
             />
             <span className="text-sm text-gray-700">Empleado activo?</span>

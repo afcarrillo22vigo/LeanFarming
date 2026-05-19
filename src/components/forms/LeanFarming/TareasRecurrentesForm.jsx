@@ -1,4 +1,12 @@
 import { useState, useEffect } from "react";
+import {
+  zonas as mockZonas,
+  tareasCatalogo as mockCatalogos,
+  maquinaria as mockMaquinaria,
+} from "../../../mock/mock";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 
 // Atajos de expresiones cron comunes en este dominio
 // El usuario puede elegir uno o escribir el suyo propio
@@ -11,20 +19,53 @@ const FRECUENCIAS_COMUNES = [
   { label: "Personalizada", valor: "" },
 ];
 
+const tareaRecurrenteSchema = z
+  .object({
+    catalogo_id: z.string().min(1, "Selecciona una tarea del catálogo"),
+    frecuencia_expr: z.string().min(1, "La frecuencia es obligatoria"),
+    zona_id: z.string(),
+    maquinaria_id: z.string(),
+    descripcion_frecuencia: z.string(),
+    activa: z.boolean().default(true),
+    fecha_inicio: z.string().min(1, "La fecha de inicio es obligatoria"),
+    fecha_fin: z.string(),
+    notas: z.string(),
+  })
+  .refine(
+    (datos) => {
+      if (!datos.fecha_fin) return true;
+      return datos.fecha_inicio < datos.fecha_fin;
+    },
+    {
+      error: "La fecha de fin debe ser posterior a la de inicio",
+      path: ["fecha_fin"],
+    },
+  );
+
 export default function TareaRecurrenteForm() {
-  const [form, setForm] = useState({
-    catalogo_id: "",
-    frecuencia_expr: "",
-    zona_id: "",
-    maquinaria_id: "",
-    descripcion_frecuencia: "",
-    activa: true,
-    fecha_inicio: "",
-    fecha_fin: "",
-    notas: "",
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+    setValue,
+  } = useForm({
+    resolver: zodResolver(tareaRecurrenteSchema),
+    defaultValues: {
+      catalogo_id: "",
+      frecuencia_expr: "",
+      zona_id: "",
+      maquinaria_id: "",
+      descripcion_frecuencia: "",
+      activa: true,
+      fecha_inicio: "",
+      fecha_fin: "",
+      notas: "",
+    },
   });
 
-  const [errores, setErrores] = useState({});
+  const zonaSeleccionada = watch("zona_id");
+
   const [catalogos, setCatalogos] = useState([]);
   const [zonas, setZonas] = useState([]);
   const [maquinaria, setMaquinaria] = useState([]);
@@ -32,32 +73,16 @@ export default function TareaRecurrenteForm() {
   // Cargamos catálogo y zonas al montar — no dependen de nada
   useEffect(() => {
     // fetch('/api/tareas-catalogo').then(r => r.json()).then(setCatalogos)
-    setCatalogos([
-      { id: "cat-1", codigo: "lavado_robot", nombre: "Lavado de robot VMS" },
-      {
-        id: "cat-2",
-        codigo: "limpieza_bebederos",
-        nombre: "Limpieza de bebederos",
-      },
-      {
-        id: "cat-3",
-        codigo: "desinfeccion_camas",
-        nombre: "Desinfección de camas",
-      },
-    ]);
+    setCatalogos(mockCatalogos);
 
     // fetch('/api/zonas').then(r => r.json()).then(setZonas)
-    setZonas([
-      { id: "zona-1", nombre: "Sala de robots" },
-      { id: "zona-2", nombre: "Becerrero" },
-      { id: "zona-3", nombre: "Alimentación" },
-    ]);
+    setZonas(mockZonas);
   }, []);
 
   // Select encadenado: cuando zona_id cambia, cargamos la maquinaria de esa zona
   useEffect(() => {
     // Si no hay zona seleccionada, vaciamos la maquinaria y salimos
-    if (!form.zona_id) {
+    if (!zonaSeleccionada) {
       setMaquinaria([]);
       return;
     }
@@ -67,82 +92,28 @@ export default function TareaRecurrenteForm() {
     //   .then(setMaquinaria)
 
     // Datos simulados filtrados por zona
-    const todasLasMaquinas = [
-      { id: "maq-1", nombre: "VMS 1", zona_id: "zona-1" },
-      { id: "maq-2", nombre: "VMS 2", zona_id: "zona-1" },
-      { id: "maq-3", nombre: "VMS 3", zona_id: "zona-1" },
-      { id: "maq-4", nombre: "Carro TMR", zona_id: "zona-3" },
-    ];
-    setMaquinaria(todasLasMaquinas.filter((m) => m.zona_id === form.zona_id));
-  }, [form.zona_id]); // se re-ejecuta solo cuando zona_id cambia
+    setMaquinaria(mockMaquinaria.filter((m) => m.zona_id === zonaSeleccionada));
+  }, [zonaSeleccionada]); // se re-ejecuta solo cuando zona_id cambia
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    // Cuando cambia la zona, reseteamos maquinaria_id
-    // porque la máquina anterior puede no pertenecer a la nueva zona
-    if (name === "zona_id") {
-      setForm({ ...form, zona_id: value, maquinaria_id: "" });
-      return;
-    }
-
-    setForm({ ...form, [name]: value });
-  };
-
-  // Cuando el usuario elige una frecuencia común, rellena el campo cron
-  const handleFrecuenciaComun = (e) => {
-    setForm({ ...form, frecuencia_expr: e.target.value });
-  };
-
-  const validar = () => {
-    const nuevosErrores = {};
-    if (!form.catalogo_id)
-      nuevosErrores.catalogo_id = "Selecciona una tarea del catálogo";
-    if (!form.frecuencia_expr.trim())
-      nuevosErrores.frecuencia_expr = "La frecuencia es obligatoria";
-    if (!form.fecha_inicio)
-      nuevosErrores.fecha_inicio = "La Fecha de Inicio es obligatoria";
-    if (
-      form.fecha_inicio &&
-      form.fecha_fin &&
-      form.fecha_inicio >= form.fecha_fin
-    )
-      nuevosErrores.fecha_fin =
-        "La fecha de fin debe ser posterior a la de inicio";
-    setErrores(nuevosErrores);
-    return Object.keys(nuevosErrores).length === 0;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!validar()) return;
-    const datos = {
-      ...form,
-      zona_id: form.zona_id || null,
-      maquinaria_id: form.maquinaria_id || null,
-      descripcion_frecuencia: form.descripcion_frecuencia || null,
-      notas: form.notas || null,
-    };
+  const onSubmit = (datos) => {
     console.log("Tarea recurrente a crear:", datos);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-lg">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full">
         <h2 className="text-xl font-semibold text-gray-800 mb-6">
           Nueva tarea recurrente
         </h2>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
           {/* Tarea del catálogo */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Tarea
             </label>
             <select
-              name="catalogo_id"
-              value={form.catalogo_id}
-              onChange={handleChange}
+              {...register("catalogo_id")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">— Selecciona una tarea —</option>
@@ -152,20 +123,23 @@ export default function TareaRecurrenteForm() {
                 </option>
               ))}
             </select>
-            {errores.catalogo_id && (
-              <p className="text-red-500 text-xs mt-1">{errores.catalogo_id}</p>
+            {errors.catalogo_id && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.catalogo_id.message}
+              </p>
             )}
           </div>
 
-          {/* Frecuencia — atajos + campo manual */}
+          {/* Frecuencia — Atajos + campo manual */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Frecuencia
             </label>
 
-            {/* Atajos para no tener que escribir cron a mano */}
+            {/* Este select NO tiene register() porque no se envía al backend. 
+                Solo usamos su onChange nativo para forzar el valor del input de abajo */}
             <select
-              onChange={handleFrecuenciaComun}
+              onChange={(e) => setValue("frecuencia_expr", e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
             >
               <option value="">— Elige una frecuencia común —</option>
@@ -176,22 +150,20 @@ export default function TareaRecurrenteForm() {
               ))}
             </select>
 
-            {/* Campo manual para expresión cron personalizada */}
+            {/* Campo real de RHF */}
             <input
               type="text"
-              name="frecuencia_expr"
-              value={form.frecuencia_expr}
-              onChange={handleChange}
               placeholder="Ej: 0 22 * * 1,4"
+              {...register("frecuencia_expr")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p className="text-xs text-gray-400 mt-1">
               Formato cron: minuto hora día mes día_semana (0=domingo,
               1=lunes...)
             </p>
-            {errores.frecuencia_expr && (
+            {errors.frecuencia_expr && (
               <p className="text-red-500 text-xs mt-1">
-                {errores.frecuencia_expr}
+                {errors.frecuencia_expr.message}
               </p>
             )}
           </div>
@@ -203,16 +175,14 @@ export default function TareaRecurrenteForm() {
               <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <textarea
-              name="descripcion_frecuencia"
-              value={form.descripcion_frecuencia}
-              onChange={handleChange}
+              {...register("descripcion_frecuencia")}
               rows={3}
               placeholder="Describe la frecuencia con detalle..."
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />
           </div>
 
-          {/* Fechas — dos campos en la misma fila */}
+          {/* Fechas */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -220,14 +190,12 @@ export default function TareaRecurrenteForm() {
               </label>
               <input
                 type="date"
-                name="fecha_inicio"
-                value={form.fecha_inicio}
-                onChange={handleChange}
+                {...register("fecha_inicio")}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              {errores.fecha_inicio && (
+              {errors.fecha_inicio && (
                 <p className="text-red-500 text-xs mt-1">
-                  {errores.fecha_inicio}
+                  {errors.fecha_inicio.message}
                 </p>
               )}
             </div>
@@ -239,13 +207,14 @@ export default function TareaRecurrenteForm() {
               </label>
               <input
                 type="date"
-                name="fecha_fin"
-                value={form.fecha_fin}
-                onChange={handleChange}
+                {...register("fecha_fin")}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              {errores.fecha_fin && (
-                <p className="text-red-500 text-xs mt-1">{errores.fecha_fin}</p>
+              {/* Aquí se mostrará el error de la validación cruzada (.refine) */}
+              {errors.fecha_fin && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.fecha_fin.message}
+                </p>
               )}
             </div>
           </div>
@@ -256,9 +225,9 @@ export default function TareaRecurrenteForm() {
               Zona <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <select
-              name="zona_id"
-              value={form.zona_id}
-              onChange={handleChange}
+              {...register("zona_id", {
+                onChange: () => setValue("maquinaria_id", ""),
+              })}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">— Selecciona una zona —</option>
@@ -270,17 +239,15 @@ export default function TareaRecurrenteForm() {
             </select>
           </div>
 
-          {/* Maquinaria — se filtra según la zona elegida */}
+          {/* Maquinaria */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Maquinaria{" "}
               <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <select
-              name="maquinaria_id"
-              value={form.maquinaria_id}
-              onChange={handleChange}
-              disabled={!form.zona_id} // deshabilitado hasta que haya zona
+              {...register("maquinaria_id")}
+              disabled={!zonaSeleccionada}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
             >
               <option value="">— Ninguna —</option>
@@ -290,7 +257,7 @@ export default function TareaRecurrenteForm() {
                 </option>
               ))}
             </select>
-            {!form.zona_id && (
+            {!zonaSeleccionada && (
               <p className="text-xs text-gray-400 mt-1">
                 Selecciona primero una zona.
               </p>
@@ -304,9 +271,7 @@ export default function TareaRecurrenteForm() {
               <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <textarea
-              name="notas"
-              value={form.notas}
-              onChange={handleChange}
+              {...register("notas")}
               rows={3}
               placeholder="..."
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"

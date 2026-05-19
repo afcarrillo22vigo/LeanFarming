@@ -1,61 +1,54 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 
 const CUALIFICACIONES = ["VMS", "TMR", "veterinaria"];
 
+const tareaCatalogoSchema = z.object({
+  codigo: z
+    .string()
+    .min(1, "El código es obligatorio")
+    .regex(
+      /^[a-z]+_[a-z]+$/,
+      "El formato debe ser 'palabra_palabra' (ej: lavado_robot)",
+    ),
+  nombre: z.string().min(1, "El nombre es obligatorio"),
+  descripcion: z.string(),
+  cualificacion_requerida: z.string(),
+  duracion_estimada_min: z.coerce.number(),
+  activa: z.boolean().default(true),
+});
+
 export default function TareasCatalogoForm() {
-  const [form, setForm] = useState({
-    codigo: "",
-    nombre: "",
-    descripcion: "",
-    cualificacion_requerida: "",
-    duracion_estimada_min: 0,
-    activa: true,
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(tareaCatalogoSchema),
+    defaultValues: {
+      codigo: "",
+      nombre: "",
+      descripcion: "",
+      cualificacion_requerida: "",
+      duracion_estimada_min: 0,
+      activa: true,
+    },
   });
 
-  const [errores, setErrores] = useState({});
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleBoolean = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.checked });
-  };
-
-  const validar = () => {
-    const nuevosErrores = {};
-    if (!form.codigo.trim()) nuevosErrores.codigo = "El codigo es obligatorio";
-    if (form.codigo && !/^[a-z_]+$/.test(form.codigo))
-      nuevosErrores.codigo =
-        "Solo letras minúsculas y guiones bajos (ej: lavado_robot)";
-    if (!form.nombre.trim()) nuevosErrores.nombre = "El nombre es obligatorio";
-    setErrores(nuevosErrores);
-    return Object.keys(nuevosErrores).length === 0;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!validar()) return;
-
-    const datos = {
-      ...form,
-      cualificacion_requerida: form.cualificacion_requerida || null,
-      duracion_estimada_min: form.duracion_estimada_min
-        ? Number(form.duracion_estimada_min)
-        : null,
-    };
-
+  const onSubmit = (datos) => {
     console.log("Tarea: ", datos);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-lg">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full">
         <h2 className="text-xl font-semibold text-gray-800 mb-6">
           Nueva Tarea del Catálogo
         </h2>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
           {/* Código */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -63,9 +56,7 @@ export default function TareasCatalogoForm() {
             </label>
             <input
               type="text"
-              name="codigo"
-              value={form.codigo}
-              onChange={handleChange}
+              {...register("codigo")}
               placeholder="Ej: lavado_robot, extraer_leche..."
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -73,8 +64,10 @@ export default function TareasCatalogoForm() {
               Solo minúsculas y guiones bajos. Este código no se puede cambiar
               después.
             </p>
-            {errores.codigo && (
-              <p className="text-red-500 text-xs mt-1">{errores.codigo}</p>
+            {errors.codigo && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.codigo.message}
+              </p>
             )}
           </div>
 
@@ -85,14 +78,14 @@ export default function TareasCatalogoForm() {
             </label>
             <input
               type="text"
-              name="nombre"
-              value={form.nombre}
-              onChange={handleChange}
+              {...register("nombre")}
               placeholder="Ej: Lavado, Análisis..."
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {errores.nombre && (
-              <p className="text-red-500 text-xs mt-1">{errores.nombre}</p>
+            {errors.nombre && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.nombre.message}
+              </p>
             )}
           </div>
 
@@ -103,9 +96,7 @@ export default function TareasCatalogoForm() {
               <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <textarea
-              name="descripcion"
-              value={form.descripcion}
-              onChange={handleChange}
+              {...register("descripcion")}
               rows={3}
               placeholder="Describe la tarea..."
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -118,9 +109,7 @@ export default function TareasCatalogoForm() {
               Cualificacion Requerida
             </label>
             <select
-              name="cualificacion_requerida"
-              value={form.cualificacion_requerida}
-              onChange={handleChange}
+              {...register("cualificacion_requerida")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">— Selecciona una —</option>
@@ -141,9 +130,7 @@ export default function TareasCatalogoForm() {
             </label>
             <input
               type="number"
-              name="duracion_estimada_min"
-              value={form.duracion_estimada_min}
-              onChange={handleChange}
+              {...register("duracion_estimada_min")}
               placeholder="Ej: 5, 20, 60..."
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -153,9 +140,7 @@ export default function TareasCatalogoForm() {
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
-              name="activa"
-              checked={form.activa}
-              onChange={handleBoolean}
+              {...register("activa")}
               className="rounded border-gray-300 text-blue-500 w-4 h-4"
             />
             <span className="text-sm text-gray-700">Activa?</span>

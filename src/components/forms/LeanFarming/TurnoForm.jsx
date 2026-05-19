@@ -1,55 +1,59 @@
 import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useForm } from "react-hook-form";
 
 const TIPOS_TURNO = ["manana", "tarde"];
 
+const turnoSchema = z
+  .object({
+    fecha: z.string().min(1, "La fecha s obligatoria"),
+    tipo_turno: z.string().min(1, "Selecciona un tipo de turno"),
+    hora_inicio: z.string().min(1, "La hora de inicio es obligatoria"),
+    hora_fin: z.string().min(1, "La hora de fin es obligatoria"),
+    notas: z.string(),
+  })
+  .refine(
+    (datos) => {
+      if (!datos.hora_inicio || !datos.hora_fin) return true;
+      return datos.hora_inicio < datos.hora_fin;
+    },
+    {
+      error: "La hora de fin debe ser posterior a la de inicio",
+      path: ["hora_fin"],
+    },
+  );
+
 export default function TurnoForm({ onTurnoCreado }) {
-  const [form, setForm] = useState({
-    fecha: "",
-    tipo_turno: "",
-    hora_inicio: "",
-    hora_fin: "",
-    notas: "",
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(turnoSchema),
+    defaultValues: {
+      fecha: "",
+      tipo_turno: "",
+      hora_inicio: "",
+      hora_fin: "",
+      notas: "",
+    },
   });
 
-  const [errores, setErrores] = useState({});
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const validar = () => {
-    const nuevosErrores = {};
-    if (!form.fecha) nuevosErrores.fecha = "La fecha es obligatoria";
-    if (!form.tipo_turno)
-      nuevosErrores.tipo_turno = "Selecciona un tipo de turno";
-    if (!form.hora_inicio)
-      nuevosErrores.hora_inicio = "La hora de inicio es obligatoria";
-    if (!form.hora_fin)
-      nuevosErrores.hora_fin = "La hora de fin es obligatoria";
-    if (form.hora_inicio && form.hora_fin && form.hora_inicio >= form.hora_fin)
-      nuevosErrores.hora_fin =
-        "La hora de fin debe ser posterior a la de inicio";
-    setErrores(nuevosErrores);
-    return Object.keys(nuevosErrores).length === 0;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!validar()) return;
+  const onSubmit = (datos) => {
     const turnoSimulado = {
-      ...form,
-      id: "turno-" + Date.now(), // id temporal hasta que haya backend
+      ...datos,
+      id: "turno-" + Date.now(), // Mantenemos tu id temporal simulado para el mock
     };
-    console.log("Turno a crear:", form);
+    console.log("Turno a crear: ", datos);
     onTurnoCreado(turnoSimulado.id);
-    // fetch('/api/turnos', { method: 'POST', body: JSON.stringify(form) })
   };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full">
       <h2 className="text-xl font-semibold text-gray-800 mb-6">Nuevo turno</h2>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
         {/* Fecha */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -57,13 +61,11 @@ export default function TurnoForm({ onTurnoCreado }) {
           </label>
           <input
             type="date"
-            name="fecha"
-            value={form.fecha}
-            onChange={handleChange}
+            {...register("fecha")}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {errores.fecha && (
-            <p className="text-red-500 text-xs mt-1">{errores.fecha}</p>
+          {errors.fecha && (
+            <p className="text-red-500 text-xs mt-1">{errors.fecha.message}</p>
           )}
         </div>
 
@@ -73,9 +75,7 @@ export default function TurnoForm({ onTurnoCreado }) {
             Tipo de turno
           </label>
           <select
-            name="tipo_turno"
-            value={form.tipo_turno}
-            onChange={handleChange}
+            {...register("tipo_turno")}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">— Selecciona un tipo —</option>
@@ -85,8 +85,10 @@ export default function TurnoForm({ onTurnoCreado }) {
               </option>
             ))}
           </select>
-          {errores.tipo_turno && (
-            <p className="text-red-500 text-xs mt-1">{errores.tipo_turno}</p>
+          {errors.tipo_turno && (
+            <p className="text-red-500 text-xs mt-1">
+              {errors.tipo_turno.message}
+            </p>
           )}
         </div>
 
@@ -98,13 +100,13 @@ export default function TurnoForm({ onTurnoCreado }) {
             </label>
             <input
               type="time"
-              name="hora_inicio"
-              value={form.hora_inicio}
-              onChange={handleChange}
+              {...register("hora_inicio")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {errores.hora_inicio && (
-              <p className="text-red-500 text-xs mt-1">{errores.hora_inicio}</p>
+            {errors.hora_inicio && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.hora_inicio.message}
+              </p>
             )}
           </div>
 
@@ -114,13 +116,13 @@ export default function TurnoForm({ onTurnoCreado }) {
             </label>
             <input
               type="time"
-              name="hora_fin"
-              value={form.hora_fin}
-              onChange={handleChange}
+              {...register("hora_fin")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {errores.hora_fin && (
-              <p className="text-red-500 text-xs mt-1">{errores.hora_fin}</p>
+            {errors.hora_fin && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.hora_fin.message}
+              </p>
             )}
           </div>
         </div>
@@ -132,16 +134,11 @@ export default function TurnoForm({ onTurnoCreado }) {
             <span className="text-gray-400 font-normal">(opcional)</span>
           </label>
           <textarea
-            name="notas"
-            value={form.notas}
-            onChange={handleChange}
+            {...register("notas")}
             rows={3}
             placeholder="Posibles notas sobre el turno"
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
           />
-          {errores.descripcion && (
-            <p className="text-red-500 text-xs mt-1">{errores.descripcion}</p>
-          )}
         </div>
 
         <button

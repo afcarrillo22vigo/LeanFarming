@@ -1,4 +1,13 @@
 import { useState, useEffect } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useForm, useFieldArray } from "react-hook-form";
+import {
+  zonas as mockZonas,
+  empleados as mockEmpleados,
+  maquinaria as mockMaquinaria,
+  animales as mockAnimales,
+} from "../../../mock/mock";
 
 const TIPOS = [
   "averia_maquinaria",
@@ -8,27 +17,59 @@ const TIPOS = [
   "alimentacion",
   "pedidos",
 ];
+
 const SEVERIDADES = ["baja", "media", "alta"];
 const ESTADOS = ["abierta", "en_gestion", "resuelta", "cerrada"];
 
+const accionSchema = z.object({
+  timestamp: z.string(),
+  accion: z.string().min(1, "Describe la acción"),
+  responsable_id: z.string(),
+});
+
+const incidenciaSchema = z.object({
+  tipo: z.string().min(1, "El tipo es obligatorio"),
+  subtipo: z.string().optional(),
+  severidad: z.string(),
+  estado: z.string(),
+  titulo: z.string().min(1, "El titulo es obligatorio"),
+  descripcion: z.string().optional(),
+  zona_id: z.string().optional(),
+  maquinaria_id: z.string().optional(),
+  animal_id: z.string().optional(),
+  reportado_por: z.string().optional(),
+  asignado_a: z.string().optional(),
+  foto_url: z.string().optional(),
+  acciones: z.array(accionSchema).default([]),
+});
+
 export default function IncidenciaForm() {
-  const [form, setForm] = useState({
-    tipo: "",
-    subtipo: "",
-    severidad: "media", // default del SQL
-    estado: "abierta", // default del SQL
-    titulo: "",
-    descripcion: "",
-    zona_id: "",
-    maquinaria_id: "",
-    animal_id: "",
-    reportado_por: "",
-    asignado_a: "",
-    foto_url: "",
-    acciones: [],
+  const {
+    register,
+    control, // Necesario para useFieldArray
+    handleSubmit,
+    watch,
+    setValue, // Permite forzar el valor de un campo
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(incidenciaSchema),
+    defaultValues: {
+      tipo: "",
+      subtipo: "",
+      severidad: "media",
+      estado: "abierta",
+      titulo: "",
+      descripcion: "",
+      zona_id: "",
+      maquinaria_id: "",
+      animal_id: "",
+      reportado_por: "",
+      asignado_a: "",
+      foto_url: "",
+      acciones: [],
+    },
   });
 
-  const [errores, setErrores] = useState({});
   const [zonas, setZonas] = useState([]);
   const [maquinaria, setMaquinaria] = useState([]);
   const [empleados, setEmpleados] = useState([]);
@@ -36,116 +77,41 @@ export default function IncidenciaForm() {
 
   // Cargamos datos maestros al montar
   useEffect(() => {
-    setZonas([
-      { id: "zona-1", nombre: "Nave" },
-      { id: "zona-2", nombre: "Becerrero" },
-      { id: "zona-3", nombre: "Enfermería" },
-      { id: "zona-4", nombre: "Oficina" },
-      { id: "zona-5", nombre: "General" },
-    ]);
-    setEmpleados([
-      { id: "emp-1", nombre: "María", apellidos: "López" },
-      { id: "emp-2", nombre: "Carlos", apellidos: "Méndez" },
-    ]);
-    setAnimales([
-      { id: "ani-1", crotal_oficial: "ES001", nombre: "Lola" },
-      { id: "ani-2", crotal_oficial: "ES002", nombre: "Mora" },
-    ]);
+    setZonas(mockZonas);
+    setEmpleados(mockEmpleados);
+    setAnimales(mockAnimales);
   }, []);
 
-  // Select encadenado zona →con maquinaria
+  // Configuración de useFieldArray para el JSONB
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "acciones", // El nombre exacto de la propiedad en el formulario
+  });
+
+  const zonaSeleccionada = watch("zona_id");
+
+  // Select encadenado zona con maquinaria
   useEffect(() => {
-    if (!form.zona_id) {
+    if (!zonaSeleccionada) {
       setMaquinaria([]);
       return;
     }
 
-    const todasLasMaquinas = [
-      { id: "maq-1", nombre: "VMS 1", zona_id: "zona-1" },
-      { id: "maq-2", nombre: "VMS 2", zona_id: "zona-1" },
-      { id: "maq-3", nombre: "VMS 3", zona_id: "zona-1" },
-      { id: "maq-4", nombre: "Carro TMR", zona_id: "zona-1" },
-    ];
-    setMaquinaria(todasLasMaquinas.filter((m) => m.zona_id === form.zona_id));
-  }, [form.zona_id]);
+    setMaquinaria(mockMaquinaria.filter((m) => m.zona_id === zonaSeleccionada));
+  }, [zonaSeleccionada]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    if (name === "zona_id") {
-      setForm({ ...form, zona_id: value, maquinaria_id: "" });
-      return;
-    }
-    setForm({ ...form, [name]: value });
-  };
-
-  // Handler para acciones dinámicas (JSONB)
-  const handleAccionChange = (indice, campo, valor) => {
-    const nuevasAcciones = form.acciones.map((accion, i) =>
-      i === indice ? { ...accion, [campo]: valor } : accion,
-    );
-    setForm({ ...form, acciones: nuevasAcciones });
-  };
-
-  const añadirAccion = () => {
-    setForm({
-      ...form,
-      acciones: [
-        ...form.acciones,
-        {
-          timestamp: new Date().toISOString().slice(0, 16),
-          accion: "",
-          responsable_id: "",
-        },
-      ],
-    });
-  };
-
-  const eliminarAccion = (indice) => {
-    setForm({
-      ...form,
-      acciones: form.acciones.filter((_, i) => i !== indice),
-    });
-  };
-
-  const validar = () => {
-    const nuevosErrores = {};
-    if (!form.titulo.trim()) nuevosErrores.titulo = "El título es obligatorio";
-    if (!form.tipo) nuevosErrores.tipo = "El tipo es obligatorio";
-    if (!form.severidad)
-      nuevosErrores.severidad = "La severidad es obligatoria";
-    form.acciones.forEach((accion, i) => {
-      if (!accion.accion.trim())
-        nuevosErrores[`accion_${i}`] = "Describe la acción";
-    });
-    setErrores(nuevosErrores);
-    return Object.keys(nuevosErrores).length === 0;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!validar()) return;
-    const datos = {
-      ...form,
-      zona_id: form.zona_id || null,
-      maquinaria_id: form.maquinaria_id || null,
-      animal_id: form.animal_id || null,
-      reportado_por: form.reportado_por || null,
-      asignado_a: form.asignado_a || null,
-      foto_url: form.foto_url || null,
-      subtipo: form.subtipo || null,
-      descripcion: form.descripcion || null,
-    };
+  const onSubmit = (datos) => {
     console.log("Incidencia a crear:", datos);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-lg">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full">
         <h2 className="text-xl font-semibold text-gray-800 mb-6">
           Nueva incidencia
         </h2>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
           {/* Título */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -153,14 +119,14 @@ export default function IncidenciaForm() {
             </label>
             <input
               type="text"
-              name="titulo"
-              value={form.titulo}
-              onChange={handleChange}
+              {...register("titulo")}
               placeholder="Ej: VMS 1 parado por fallo de sensor"
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {errores.titulo && (
-              <p className="text-red-500 text-xs mt-1">{errores.titulo}</p>
+            {errors.titulo && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.titulo.message}
+              </p>
             )}
           </div>
 
@@ -171,9 +137,7 @@ export default function IncidenciaForm() {
                 Tipo
               </label>
               <select
-                name="tipo"
-                value={form.tipo}
-                onChange={handleChange}
+                {...register("tipo")}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">— Selecciona —</option>
@@ -183,8 +147,10 @@ export default function IncidenciaForm() {
                   </option>
                 ))}
               </select>
-              {errores.tipo && (
-                <p className="text-red-500 text-xs mt-1">{errores.tipo}</p>
+              {errors.tipo && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.tipo.message}
+                </p>
               )}
             </div>
             <div>
@@ -194,9 +160,7 @@ export default function IncidenciaForm() {
               </label>
               <input
                 type="text"
-                name="subtipo"
-                value={form.subtipo}
-                onChange={handleChange}
+                {...register("subtipo")}
                 placeholder="Ej: sensor_fallo..."
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -210,9 +174,7 @@ export default function IncidenciaForm() {
                 Severidad
               </label>
               <select
-                name="severidad"
-                value={form.severidad}
-                onChange={handleChange}
+                {...register("severidad")}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {SEVERIDADES.map((s) => (
@@ -221,18 +183,13 @@ export default function IncidenciaForm() {
                   </option>
                 ))}
               </select>
-              {errores.severidad && (
-                <p className="text-red-500 text-xs mt-1">{errores.severidad}</p>
-              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Estado
               </label>
               <select
-                name="estado"
-                value={form.estado}
-                onChange={handleChange}
+                {...register("estado")}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {ESTADOS.map((e) => (
@@ -251,24 +208,23 @@ export default function IncidenciaForm() {
               <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <textarea
-              name="descripcion"
-              value={form.descripcion}
-              onChange={handleChange}
+              {...register("descripcion")}
               rows={3}
               placeholder="Describe la incidencia con detalle..."
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />
           </div>
 
-          {/* Zona → encadenado con maquinaria */}
+          {/* Zona (Encadenada) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Zona <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <select
-              name="zona_id"
-              value={form.zona_id}
-              onChange={handleChange}
+              {...register("zona_id", {
+                // Al cambiar la zona, vaciamos el ID de la máquina automáticamente
+                onChange: () => setValue("maquinaria_id", ""),
+              })}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">— Ninguna —</option>
@@ -280,17 +236,15 @@ export default function IncidenciaForm() {
             </select>
           </div>
 
-          {/* Maquinaria — filtrada por zona */}
+          {/* Maquinaria (Filtrada) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Maquinaria{" "}
               <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <select
-              name="maquinaria_id"
-              value={form.maquinaria_id}
-              onChange={handleChange}
-              disabled={!form.zona_id}
+              {...register("maquinaria_id")}
+              disabled={!zonaSeleccionada}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
             >
               <option value="">— Ninguna —</option>
@@ -300,7 +254,7 @@ export default function IncidenciaForm() {
                 </option>
               ))}
             </select>
-            {!form.zona_id && (
+            {!zonaSeleccionada && (
               <p className="text-xs text-gray-400 mt-1">
                 Selecciona primero una zona.
               </p>
@@ -314,9 +268,7 @@ export default function IncidenciaForm() {
               <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <select
-              name="animal_id"
-              value={form.animal_id}
-              onChange={handleChange}
+              {...register("animal_id")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">— Ninguno —</option>
@@ -336,9 +288,7 @@ export default function IncidenciaForm() {
                 <span className="text-gray-400 font-normal">(opcional)</span>
               </label>
               <select
-                name="reportado_por"
-                value={form.reportado_por}
-                onChange={handleChange}
+                {...register("reportado_por")}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">— Ninguno —</option>
@@ -355,9 +305,7 @@ export default function IncidenciaForm() {
                 <span className="text-gray-400 font-normal">(opcional)</span>
               </label>
               <select
-                name="asignado_a"
-                value={form.asignado_a}
-                onChange={handleChange}
+                {...register("asignado_a")}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">— Ninguno —</option>
@@ -378,15 +326,13 @@ export default function IncidenciaForm() {
             </label>
             <input
               type="text"
-              name="foto_url"
-              value={form.foto_url}
-              onChange={handleChange}
+              {...register("foto_url")}
               placeholder="https://..."
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          {/* Acciones dinámicas — JSONB */}
+          {/* Acciones Dinámicas (JSONB) usando useFieldArray */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-gray-700">
@@ -394,31 +340,37 @@ export default function IncidenciaForm() {
               </label>
               <button
                 type="button"
-                onClick={añadirAccion}
+                onClick={() =>
+                  append({
+                    timestamp: new Date().toISOString().slice(0, 16),
+                    accion: "",
+                    responsable_id: "",
+                  })
+                }
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium"
               >
                 + Añadir acción
               </button>
             </div>
 
-            {form.acciones.length === 0 && (
+            {fields.length === 0 && (
               <p className="text-sm text-gray-400 italic">
                 No hay acciones registradas aún.
               </p>
             )}
 
-            {form.acciones.map((accion, indice) => (
+            {fields.map((field, index) => (
               <div
-                key={indice}
+                key={field.id}
                 className="border border-gray-200 rounded-md p-3 mb-3 flex flex-col gap-3"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-gray-500">
-                    Acción {indice + 1}
+                    Acción {index + 1}
                   </span>
                   <button
                     type="button"
-                    onClick={() => eliminarAccion(indice)}
+                    onClick={() => remove(index)}
                     className="text-xs text-red-400 hover:text-red-600"
                   >
                     Eliminar
@@ -431,10 +383,7 @@ export default function IncidenciaForm() {
                   </label>
                   <input
                     type="datetime-local"
-                    value={accion.timestamp}
-                    onChange={(e) =>
-                      handleAccionChange(indice, "timestamp", e.target.value)
-                    }
+                    {...register(`acciones.${index}.timestamp`)}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -445,16 +394,13 @@ export default function IncidenciaForm() {
                   </label>
                   <input
                     type="text"
-                    value={accion.accion}
-                    onChange={(e) =>
-                      handleAccionChange(indice, "accion", e.target.value)
-                    }
-                    placeholder="Ej: Se reinició el robot, Se llamó al técnico..."
+                    placeholder="Ej: Se reinició el robot..."
+                    {...register(`acciones.${index}.accion`)}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  {errores[`accion_${indice}`] && (
+                  {errors?.acciones?.[index]?.accion && (
                     <p className="text-red-500 text-xs mt-1">
-                      {errores[`accion_${indice}`]}
+                      {errors.acciones[index].accion.message}
                     </p>
                   )}
                 </div>
@@ -464,14 +410,7 @@ export default function IncidenciaForm() {
                     Responsable
                   </label>
                   <select
-                    value={accion.responsable_id}
-                    onChange={(e) =>
-                      handleAccionChange(
-                        indice,
-                        "responsable_id",
-                        e.target.value,
-                      )
-                    }
+                    {...register(`acciones.${index}.responsable_id`)}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">— Selecciona —</option>

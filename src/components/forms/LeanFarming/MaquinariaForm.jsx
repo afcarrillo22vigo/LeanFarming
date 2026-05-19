@@ -1,73 +1,70 @@
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { zonas as mockZonas } from "../../../mock/mock";
+
+const TIPOS = [
+  "robot_ordeno",
+  "carro_mezclador",
+  "amamantadora",
+  "bomba",
+  "otro",
+];
+
+// 1. Esquema de validación con Zod
+const maquinariaSchema = z.object({
+  nombre: z.string().min(1, "El nombre es obligatorio"),
+  tipo: z.string().min(1, "El tipo es obligatorio"),
+  zona_id: z.string().min(1, "La zona es obligatoria"),
+  numero_serie: z.string().max(100, "El número de serie es demasiado grande"),
+  marca: z.string(),
+  modelo: z.string(),
+  fecha_instalacion: z.string().optional().or(z.literal("")),
+  activa: z.boolean().default(true),
+  notas: z.string(),
+});
 
 export default function MaquinariaForm() {
-  const TIPOS = [
-    "robot_ordeno",
-    "carro_mezclador",
-    "amamantadora",
-    "bomba",
-    "otro",
-  ];
-
-  const [form, setForm] = useState({
-    nombre: "",
-    tipo: "",
-    zona_id: "",
-    marca: "",
-    modelo: "",
-    numero_serie: "",
-    fecha_instalacion: "",
-    activa: true,
-    notas: "",
-  });
-
-  const [errores, setErrores] = useState({});
   const [zonas, setZonas] = useState([]);
+
+  // 2. Inicialización de React Hook Form
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(maquinariaSchema),
+    defaultValues: {
+      nombre: "",
+      tipo: "",
+      zona_id: "",
+      numero_serie: "",
+      marca: "",
+      modelo: "",
+      fecha_instalacion: "",
+      activa: true,
+      notas: "",
+    },
+  });
 
   useEffect(() => {
     // fetch('/api/zonas').then(r => r.json()).then(setZonas)
-    setZonas([
-      { id: "zona-1", nombre: "Sala de robots" },
-      { id: "zona-2", nombre: "Becerrero" },
-      { id: "zona-3", nombre: "Enfermería" },
-      { id: "zona-4", nombre: "Alimentación" },
-      { id: "zona-5", nombre: "Oficina" },
-    ]);
+    setZonas(mockZonas);
   }, []);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleBoolean = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.checked });
-  };
-
-  const validar = () => {
-    const nuevosErrores = {};
-    if (!form.nombre.trim()) nuevosErrores.nombre = "El nombre es obligatorio";
-    if (!form.tipo) nuevosErrores.tipo = "El tipo es obligatorio";
-    if (!form.zona_id) nuevosErrores.zona_id = "La zona es obligatoria";
-    if (form.numero_serie.length > 100)
-      nuevosErrores.numero_serie = "El número de serie es demasiado grande";
-    setErrores(nuevosErrores);
-    return Object.keys(nuevosErrores).length === 0;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!validar()) return;
-    console.log("Maquinaria creada: ", form);
+  const onSubmit = (datos) => {
+    console.log("Maquinaria creada: ", datos);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-lg">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full">
         <h2 className="text-xl font-semibold text-gray-800 mb-6">
           Nueva Maquinaria
         </h2>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
           {/* Nombre */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -75,14 +72,14 @@ export default function MaquinariaForm() {
             </label>
             <input
               type="text"
-              name="nombre"
-              value={form.nombre}
-              onChange={handleChange}
               placeholder="Ej: Robot 1, MQ213..."
+              {...register("nombre")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {errores.nombre && (
-              <p className="text-red-500 text-xs mt-1">{errores.nombre}</p>
+            {errors.nombre && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.nombre.message}
+              </p>
             )}
           </div>
 
@@ -94,27 +91,24 @@ export default function MaquinariaForm() {
             </label>
             <input
               type="text"
-              name="numero_serie"
-              value={form.numero_serie}
-              onChange={handleChange}
               placeholder="Ej: Robot 1, MQ213..."
+              {...register("numero_serie")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {errores.numero_serie && (
+            {errors.numero_serie && (
               <p className="text-red-500 text-xs mt-1">
-                {errores.numero_serie}
+                {errors.numero_serie.message}
               </p>
             )}
           </div>
 
+          {/* Tipo */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Tipo
             </label>
             <select
-              name="tipo"
-              value={form.tipo}
-              onChange={handleChange}
+              {...register("tipo")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">— Selecciona un tipo —</option>
@@ -124,12 +118,13 @@ export default function MaquinariaForm() {
                 </option>
               ))}
             </select>
-            {errores.tipo && (
-              <p className="text-red-500 text-xs mt-1">{errores.tipo}</p>
+            {errors.tipo && (
+              <p className="text-red-500 text-xs mt-1">{errors.tipo.message}</p>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
+            {/* Marca */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Marca{" "}
@@ -137,14 +132,13 @@ export default function MaquinariaForm() {
               </label>
               <input
                 type="text"
-                name="marca"
-                value={form.marca}
-                onChange={handleChange}
                 placeholder="Marca del modelo"
+                {...register("marca")}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
+            {/* Modelo */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Modelo{" "}
@@ -152,16 +146,14 @@ export default function MaquinariaForm() {
               </label>
               <input
                 type="text"
-                name="modelo"
-                value={form.modelo}
-                onChange={handleChange}
                 placeholder="Modelo del robot"
+                {...register("modelo")}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
 
-          {/* Fecha */}
+          {/* Fecha de Instalación */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Fecha de Instalación{" "}
@@ -169,21 +161,18 @@ export default function MaquinariaForm() {
             </label>
             <input
               type="date"
-              name="fecha_instalacion"
-              value={form.fecha_instalacion}
-              onChange={handleChange}
+              {...register("fecha_instalacion")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
+          {/* Zona de la Máquina */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Zona de la Máquina
             </label>
             <select
-              name="zona_id"
-              value={form.zona_id}
-              onChange={handleChange}
+              {...register("zona_id")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">— Selecciona una zona —</option>
@@ -193,8 +182,10 @@ export default function MaquinariaForm() {
                 </option>
               ))}
             </select>
-            {errores.zona_id && (
-              <p className="text-red-500 text-xs mt-1">{errores.zona_id}</p>
+            {errors.zona_id && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.zona_id.message}
+              </p>
             )}
           </div>
 
@@ -205,22 +196,18 @@ export default function MaquinariaForm() {
               <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
             <textarea
-              name="notas"
-              value={form.notas}
-              onChange={handleChange}
               rows={3}
               placeholder="Descripción o notas sobre maquinaria..."
+              {...register("notas")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />
           </div>
 
-          {/*Activa*/}
+          {/* Activa */}
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
-              name="activa"
-              checked={form.activa}
-              onChange={handleBoolean}
+              {...register("activa")}
               className="rounded border-gray-300 text-blue-500 w-4 h-4"
             />
             <span className="text-sm text-gray-700">Activa?</span>
