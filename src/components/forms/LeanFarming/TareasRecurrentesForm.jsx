@@ -142,8 +142,6 @@ export default function TareaRecurrenteForm() {
               Frecuencia
             </label>
 
-            {/* Este select NO tiene register() porque no se envía al backend. 
-                Solo usamos su onChange nativo para forzar el valor del input de abajo */}
             <select
               onChange={(e) => setValue("frecuencia_expr", e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
@@ -156,7 +154,6 @@ export default function TareaRecurrenteForm() {
               ))}
             </select>
 
-            {/* Campo real de RHF */}
             <input
               type="text"
               placeholder="Ej: 0 22 * * 1,4"
@@ -216,7 +213,6 @@ export default function TareaRecurrenteForm() {
                 {...register("fecha_fin")}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              {/* Aquí se mostrará el error de la validación cruzada (.refine) */}
               {errors.fecha_fin && (
                 <p className="text-red-500 text-xs mt-1">
                   {errors.fecha_fin.message}

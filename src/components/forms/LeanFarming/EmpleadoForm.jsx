@@ -198,8 +198,6 @@ export default function EmpleadoForm() {
                   key={c}
                   className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer"
                 >
-                  {/* Al registrar todos con el mismo nombre ("cualificaciones") y pasar un value, 
-                      RHF los agrupa automáticamente en un array en base a si están chequeados o no */}
                   <input
                     type="checkbox"
                     value={c}
@@ -212,7 +210,7 @@ export default function EmpleadoForm() {
             </div>
           </div>
 
-          {/* Activo (Booleano único) */}
+          {/* Activo (Boolean) */}
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"

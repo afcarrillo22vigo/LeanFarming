@@ -51,7 +51,7 @@ export async function getTareasRecurrentes(catalogoId = null) {
   return fetch(url).then((r) => r.json());
 }
 
-// POSTs
+// POSTS
 export async function crearEmpleado(datos) {
   if (!API.leanfarming) {
     console.log("[MOCK] Crear empleado:", datos);

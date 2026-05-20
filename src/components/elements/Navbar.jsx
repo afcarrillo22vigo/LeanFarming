@@ -1,8 +1,5 @@
 import { NavLink } from "react-router-dom";
 
-// NavLink es como <a> pero añade la clase "active" automáticamente
-// cuando la URL coincide con el href
-
 const LINKS_LEANFARMING = [
   { to: "/empleados", label: "Empleados" },
   { to: "/zonas", label: "Zonas" },
@@ -29,7 +26,6 @@ export default function Navbar() {
             to={link.to}
             className={({ isActive }) =>
               // isActive es true cuando la URL actual coincide con link.to
-              // Tailwind cambia el estilo automáticamente
               isActive
                 ? "text-sm px-3 py-1 rounded-md bg-blue-50 text-blue-600 font-medium"
                 : "text-sm px-3 py-1 rounded-md text-gray-600 hover:bg-gray-100"

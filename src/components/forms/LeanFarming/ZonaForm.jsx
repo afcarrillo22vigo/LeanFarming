@@ -3,7 +3,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { crearZona } from "../../../services/leanfarming";
 
-// 1. Esquema de validación con Zod
 const zonaSchema = z.object({
   nombre: z.string().min(1, "El nombre es obligatorio"),
   codigo: z.string().min(1, "El código es obligatorio"),
@@ -13,7 +12,6 @@ const zonaSchema = z.object({
 });
 
 export default function ZonaForm() {
-  // 2. Configuración de React Hook Form
   const {
     register,
     handleSubmit,
@@ -29,7 +27,6 @@ export default function ZonaForm() {
     },
   });
 
-  // 3. El submit ya solo se ejecuta si la validación pasa
   const onSubmit = async (datos) => {
     try {
       const respuesta = await crearZona(datos);
@@ -50,14 +47,12 @@ export default function ZonaForm() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Nombre
             </label>
-            {/* register("nombre_del_campo") reemplaza a name, value y onChange */}
             <input
               type="text"
               placeholder="Ej: Sala de robots, Becerrero..."
               {...register("nombre")}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {/* Inyección de mensajes de Zod con RHF */}
             {errors.nombre && (
               <p className="text-red-500 text-xs mt-1">
                 {errors.nombre.message}

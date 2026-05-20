@@ -66,7 +66,6 @@ export default function TareaEjecucionForm() {
   const [zonas, setZonas] = useState([]);
   const [maquinaria, setMaquinaria] = useState([]); // filtradas por zona
 
-  // Cargamos catálogos, empleados y zonas al montar
   useEffect(() => {
     getTareasCatalogo().then(setCatalogos);
     getEmpleados().then(setEmpleados);
@@ -76,15 +75,12 @@ export default function TareaEjecucionForm() {
   const catalogoSeleccionado = watch("catalogo_id");
 
   // Encadenado 1: catálogo + recurrentes
-  // Cuando cambia el catálogo, cargamos solo las tareas recurrentes de ese catálogo
+  // cuando cambia el catálogo, cargamos solo las tareas recurrentes de ese catálogo
   useEffect(() => {
     if (!catalogoSeleccionado) {
       setRecurrentes([]);
       return;
     }
-
-    // fetch(`/api/tareas-recurrentes?catalogo_id=${form.catalogo_id}`)
-    //   .then(r => r.json()).then(setRecurrentes)
 
     getTareasRecurrentes(catalogoSeleccionado).then(setRecurrentes);
   }, [catalogoSeleccionado]);
@@ -97,9 +93,6 @@ export default function TareaEjecucionForm() {
       setMaquinaria([]);
       return;
     }
-
-    // fetch(`/api/maquinaria?zona_id=${form.zona_id}`)
-    //   .then(r => r.json()).then(setMaquinaria)
 
     getMaquinaria(zonaSeleccionada).then(setMaquinaria);
   }, [zonaSeleccionada]);
@@ -253,7 +246,7 @@ export default function TareaEjecucionForm() {
             )}
           </div>
 
-          {/* Timestamps — los tres en orden lógico */}
+          {/* Timestamps */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Fecha planificada

@@ -12,7 +12,6 @@ const TIPOS = [
   "otro",
 ];
 
-// 1. Esquema de validación con Zod
 const maquinariaSchema = z.object({
   nombre: z.string().min(1, "El nombre es obligatorio"),
   tipo: z.string().min(1, "El tipo es obligatorio"),
@@ -28,7 +27,6 @@ const maquinariaSchema = z.object({
 export default function MaquinariaForm() {
   const [zonas, setZonas] = useState([]);
 
-  // 2. Inicialización de React Hook Form
   const {
     register,
     handleSubmit,
@@ -49,7 +47,6 @@ export default function MaquinariaForm() {
   });
 
   useEffect(() => {
-    // fetch('/api/zonas').then(r => r.json()).then(setZonas)
     getZonas().then(setZonas);
   }, []);
 

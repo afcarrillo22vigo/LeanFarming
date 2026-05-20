@@ -82,17 +82,16 @@ export default function IncidenciaForm() {
   const [empleados, setEmpleados] = useState([]);
   const [animales, setAnimales] = useState([]);
 
-  // Cargamos datos maestros al montar
   useEffect(() => {
     getZonas().then(setZonas);
     getEmpleados().then(setEmpleados);
     getAnimales().then(setAnimales);
   }, []);
 
-  // Configuración de useFieldArray para el JSONB
+  // Configuración de useFieldArray para JSONB
   const { fields, append, remove } = useFieldArray({
     control,
-    name: "acciones", // El nombre exacto de la propiedad en el formulario
+    name: "acciones", // nombre exacto de la propiedad en el formulario
   });
 
   const zonaSeleccionada = watch("zona_id");
@@ -344,7 +343,7 @@ export default function IncidenciaForm() {
             />
           </div>
 
-          {/* Acciones Dinámicas (JSONB) usando useFieldArray */}
+          {/* Acciones (JSONB) usando useFieldArray */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-gray-700">

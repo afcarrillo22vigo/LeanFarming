@@ -1,7 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/elements/Navbar";
-
-// LeanFarming
 import EmpleadoForm from "./components/forms/LeanFarming/EmpleadoForm";
 import ZonaForm from "./components/forms/LeanFarming/ZonaForm";
 import MaquinariaForm from "./components/forms/LeanFarming/MaquinariaForm";
@@ -20,7 +18,7 @@ export default function App() {
       <Navbar />
       <main className="p-6">
         <Routes>
-          {/* Redirige la raíz a /empleados */}
+          {/* Redirige de / a /empleados */}
           <Route path="/" element={<Navigate to="/empleados" replace />} />
 
           {/* LeanFarming */}

@@ -52,7 +52,6 @@ export default function PedidoForm() {
   });
 
   useEffect(() => {
-    // fetch('/api/empleados').then(r => r.json()).then(setEmpleados)
     getEmpleados().then(setEmpleados);
   }, []);
 

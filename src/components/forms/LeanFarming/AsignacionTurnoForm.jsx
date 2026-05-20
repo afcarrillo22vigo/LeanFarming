@@ -36,10 +36,7 @@ export default function AsignacionTurnoForm({ turnoId }) {
   const [zonas, setZonas] = useState([]);
 
   useEffect(() => {
-    // fetch('/api/empleados').then(r => r.json()).then(setEmpleados)
     getEmpleados().then(setEmpleados);
-
-    // fetch('/api/zonas').then(r => r.json()).then(setZonas)
     getZonas().then(setZonas);
   }, []);
 
