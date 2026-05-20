@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import {
-  zonas as mockZonas,
-  tareasCatalogo as mockCatalogos,
-  maquinaria as mockMaquinaria,
-} from "../../../mock/mock";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import {
+  crearTareaRecurrente,
+  getMaquinaria,
+  getTareasCatalogo,
+  getZonas,
+} from "../../../services/leanfarming";
 
 // Atajos de expresiones cron comunes en este dominio
 // El usuario puede elegir uno o escribir el suyo propio
@@ -73,10 +74,10 @@ export default function TareaRecurrenteForm() {
   // Cargamos catálogo y zonas al montar — no dependen de nada
   useEffect(() => {
     // fetch('/api/tareas-catalogo').then(r => r.json()).then(setCatalogos)
-    setCatalogos(mockCatalogos);
+    getTareasCatalogo().then(setCatalogos);
 
     // fetch('/api/zonas').then(r => r.json()).then(setZonas)
-    setZonas(mockZonas);
+    getZonas().then(setZonas);
   }, []);
 
   // Select encadenado: cuando zona_id cambia, cargamos la maquinaria de esa zona
@@ -92,11 +93,16 @@ export default function TareaRecurrenteForm() {
     //   .then(setMaquinaria)
 
     // Datos simulados filtrados por zona
-    setMaquinaria(mockMaquinaria.filter((m) => m.zona_id === zonaSeleccionada));
+    getMaquinaria(zonaSeleccionada).then(setMaquinaria);
   }, [zonaSeleccionada]); // se re-ejecuta solo cuando zona_id cambia
 
-  const onSubmit = (datos) => {
-    console.log("Tarea recurrente a crear:", datos);
+  const onSubmit = async (datos) => {
+    try {
+      const respuesta = await crearTareaRecurrente(datos);
+      console.log("Tarea recurrente a crear:", datos);
+    } catch (err) {
+      console.error("Error:", err);
+    }
   };
 
   return (

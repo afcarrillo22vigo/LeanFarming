@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { zonas as mockZonas } from "../../../mock/mock";
+import { crearMaquinaria, getZonas } from "../../../services/leanfarming";
 
 const TIPOS = [
   "robot_ordeno",
@@ -50,11 +50,16 @@ export default function MaquinariaForm() {
 
   useEffect(() => {
     // fetch('/api/zonas').then(r => r.json()).then(setZonas)
-    setZonas(mockZonas);
+    getZonas().then(setZonas);
   }, []);
 
-  const onSubmit = (datos) => {
-    console.log("Maquinaria creada: ", datos);
+  const onSubmit = async (datos) => {
+    try {
+      const resultado = await crearMaquinaria(datos);
+      console.log("Maquinaria creada: ", datos);
+    } catch (err) {
+      console.error("Error:", err);
+    }
   };
 
   return (

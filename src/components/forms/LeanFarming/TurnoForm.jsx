@@ -2,6 +2,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
+import { crearTurno } from "../../../services/leanfarming";
 
 const TIPOS_TURNO = ["manana", "tarde"];
 
@@ -40,13 +41,14 @@ export default function TurnoForm({ onTurnoCreado }) {
     },
   });
 
-  const onSubmit = (datos) => {
-    const turnoSimulado = {
-      ...datos,
-      id: "turno-" + Date.now(), // Mantenemos tu id temporal simulado para el mock
-    };
-    console.log("Turno a crear: ", datos);
-    onTurnoCreado(turnoSimulado.id);
+  const onSubmit = async (datos) => {
+    try {
+      const respuesta = await crearTurno(datos);
+      onTurnoCreado(respuesta.id);
+      console.log("Turno a crear: ", datos);
+    } catch (err) {
+      console.error("Error:", err);
+    }
   };
 
   return (

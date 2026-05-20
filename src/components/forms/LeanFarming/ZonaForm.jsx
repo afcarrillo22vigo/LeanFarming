@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { crearZona } from "../../../services/leanfarming";
 
 // 1. Esquema de validación con Zod
 const zonaSchema = z.object({
@@ -29,8 +30,13 @@ export default function ZonaForm() {
   });
 
   // 3. El submit ya solo se ejecuta si la validación pasa
-  const onSubmit = (datos) => {
-    console.log("Zona a crear:", datos);
+  const onSubmit = async (datos) => {
+    try {
+      const respuesta = await crearZona(datos);
+      console.log("Zona a crear:", datos);
+    } catch (err) {
+      console.error("Error:", err);
+    }
   };
 
   return (

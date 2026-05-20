@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
-import { empleados as mockEmpleados } from "../../../mock/mock";
+import { crearPedido, getEmpleados } from "../../../services/leanfarming";
 
 const ESTADOS = [
   "solicitado",
@@ -53,11 +53,16 @@ export default function PedidoForm() {
 
   useEffect(() => {
     // fetch('/api/empleados').then(r => r.json()).then(setEmpleados)
-    setEmpleados(mockEmpleados);
+    getEmpleados().then(setEmpleados);
   }, []);
 
-  const onSubmit = (datos) => {
-    console.log("Pedido a crear: ", datos);
+  const onSubmit = async (datos) => {
+    try {
+      const resultado = await crearPedido(datos);
+      console.log("Pedido a crear: ", datos);
+    } catch (err) {
+      console.error("Error:", err);
+    }
   };
 
   return (

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
+import { crearEmpleado } from "../../../services/leanfarming";
 
 const ROLES = ["encargado", "auxiliar", "veterinario", "mecanico"];
 const CUALIFICACIONES = ["VMS", "TMR", "veterinaria"];
@@ -39,8 +40,13 @@ export default function EmpleadoForm() {
     },
   });
 
-  const onSubmit = (datos) => {
-    console.log("Datos a enviar:", datos);
+  const onSubmit = async (datos) => {
+    try {
+      const resultado = await crearEmpleado(datos);
+      console.log("Creado:", datos);
+    } catch (err) {
+      console.error("Error:", err);
+    }
   };
 
   return (

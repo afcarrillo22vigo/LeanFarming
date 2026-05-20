@@ -8,6 +8,13 @@ import {
   maquinaria as mockMaquinaria,
   animales as mockAnimales,
 } from "../../../mock/mock";
+import {
+  getEmpleados,
+  getZonas,
+  getMaquinaria,
+  crearIncidencia,
+} from "../../../services/leanfarming";
+import { getAnimales } from "../../../services/zootecnico";
 
 const TIPOS = [
   "averia_maquinaria",
@@ -77,9 +84,9 @@ export default function IncidenciaForm() {
 
   // Cargamos datos maestros al montar
   useEffect(() => {
-    setZonas(mockZonas);
-    setEmpleados(mockEmpleados);
-    setAnimales(mockAnimales);
+    getZonas().then(setZonas);
+    getEmpleados().then(setEmpleados);
+    getAnimales().then(setAnimales);
   }, []);
 
   // Configuración de useFieldArray para el JSONB
@@ -97,11 +104,16 @@ export default function IncidenciaForm() {
       return;
     }
 
-    setMaquinaria(mockMaquinaria.filter((m) => m.zona_id === zonaSeleccionada));
+    getMaquinaria(zonaSeleccionada).then(setMaquinaria);
   }, [zonaSeleccionada]);
 
-  const onSubmit = (datos) => {
-    console.log("Incidencia a crear:", datos);
+  const onSubmit = async (datos) => {
+    try {
+      const resultado = await crearIncidencia(datos);
+      console.log("Incidencia a crear:", datos);
+    } catch (err) {
+      console.error("Error:", err);
+    }
   };
 
   return (

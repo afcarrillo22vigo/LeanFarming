@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  tareasCatalogo as mockCatalogo,
-  tareasRecurrentes as mockRecurrentes,
-  empleados as mockEmpleados,
-  zonas as mockZonas,
-  maquinaria as mockMaquinaria,
-} from "../../../mock/mock";
 import * as z from "zod";
+import {
+  crearTareaEjecucion,
+  getEmpleados,
+  getMaquinaria,
+  getTareasCatalogo,
+  getTareasRecurrentes,
+  getZonas,
+} from "../../../services/leanfarming";
 
 const ESTADOS = ["pendiente", "en_curso", "completada", "vencida", "cancelada"];
 
@@ -67,9 +68,9 @@ export default function TareaEjecucionForm() {
 
   // Cargamos catálogos, empleados y zonas al montar
   useEffect(() => {
-    setCatalogos(mockCatalogo);
-    setEmpleados(mockEmpleados);
-    setZonas(mockZonas);
+    getTareasCatalogo().then(setCatalogos);
+    getEmpleados().then(setEmpleados);
+    getZonas().then(setZonas);
   }, []);
 
   const catalogoSeleccionado = watch("catalogo_id");
@@ -85,9 +86,7 @@ export default function TareaEjecucionForm() {
     // fetch(`/api/tareas-recurrentes?catalogo_id=${form.catalogo_id}`)
     //   .then(r => r.json()).then(setRecurrentes)
 
-    setRecurrentes(
-      mockRecurrentes.filter((r) => r.catalogo_id === catalogoSeleccionado),
-    );
+    getTareasRecurrentes(catalogoSeleccionado).then(setRecurrentes);
   }, [catalogoSeleccionado]);
 
   const zonaSeleccionada = watch("zona_id");
@@ -102,11 +101,16 @@ export default function TareaEjecucionForm() {
     // fetch(`/api/maquinaria?zona_id=${form.zona_id}`)
     //   .then(r => r.json()).then(setMaquinaria)
 
-    setMaquinaria(mockMaquinaria.filter((m) => m.zona_id === zonaSeleccionada));
+    getMaquinaria(zonaSeleccionada).then(setMaquinaria);
   }, [zonaSeleccionada]);
 
-  const onSubmit = (datos) => {
-    console.log("Ejecución a crear", datos);
+  const onSubmit = async (datos) => {
+    try {
+      const resultado = await crearTareaEjecucion(datos);
+      console.log("Ejecución a crear", datos);
+    } catch (err) {
+      console.error("Error:", err);
+    }
   };
 
   return (

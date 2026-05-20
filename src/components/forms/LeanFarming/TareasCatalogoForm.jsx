@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { crearTareaCatalogo } from "../../../services/leanfarming";
 
 const CUALIFICACIONES = ["VMS", "TMR", "veterinaria"];
 
@@ -37,8 +38,13 @@ export default function TareasCatalogoForm() {
     },
   });
 
-  const onSubmit = (datos) => {
-    console.log("Tarea: ", datos);
+  const onSubmit = async (datos) => {
+    try {
+      const resultado = await crearTareaCatalogo(datos);
+      console.log("Tarea: ", datos);
+    } catch (err) {
+      console.log("Error:", err);
+    }
   };
 
   return (

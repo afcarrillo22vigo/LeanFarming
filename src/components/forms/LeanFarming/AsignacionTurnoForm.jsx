@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import {
-  zonas as mockZonas,
-  empleados as mockEmpleados,
-} from "../../../mock/mock";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
+import {
+  crearAsignacionTurno,
+  getEmpleados,
+  getZonas,
+} from "../../../services/leanfarming";
 
 const asignacionTurnoSchema = z.object({
   turno_id: z.string().min(1, "No hay ningún torno seleccionado"),
@@ -36,10 +37,10 @@ export default function AsignacionTurnoForm({ turnoId }) {
 
   useEffect(() => {
     // fetch('/api/empleados').then(r => r.json()).then(setEmpleados)
-    setEmpleados(mockEmpleados);
+    getEmpleados().then(setEmpleados);
 
     // fetch('/api/zonas').then(r => r.json()).then(setZonas)
-    setZonas(mockZonas);
+    getZonas().then(setZonas);
   }, []);
 
   const currentTurnoId = watch("turno_id");
@@ -51,8 +52,13 @@ export default function AsignacionTurnoForm({ turnoId }) {
     }
   }, [turnoId, setValue]);
 
-  const onSubmit = (datos) => {
-    console.log("Asignación a crear: ", datos);
+  const onSubmit = async (datos) => {
+    try {
+      const resultado = await crearAsignacionTurno(datos);
+      console.log("Asignación a crear: ", datos);
+    } catch (err) {
+      console.error("Error:", err);
+    }
   };
 
   return (
